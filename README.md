@@ -231,7 +231,7 @@ cat(sprintf("\nBest performance for k = %d (NMI = %.4f)\n", best_k, max(results$
 
 </details>
 
-## Library interface 
+## Library's interface 
 
 ```R
 # Calculating the Overlapping Normalized Mutual Information (NMI) between two covers
