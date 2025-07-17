@@ -1,5 +1,10 @@
 # Implementation of Overlapping NMI library for R
 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/995b6a66d00f4901872d566d2ef1d4a6)](https://app.codacy.com/gh/R0mb0/Overlapping-NMI-R/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/R0mb0/Overlapping-NMI-R)
+[![Open Source Love svg3](https://badges.frapsoft.com/os/v3/open-source.svg?v=103)](https://github.com/R0mb0/Overlapping-NMI-R)
+![License](https://img.shields.io/badge/license-AGPLv3-blue.svg?style=plastic)
+
 <details>
 <summary>
    
