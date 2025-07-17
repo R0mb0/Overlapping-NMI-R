@@ -1,3 +1,12 @@
+# Implementation of Overlapping NMI library for R
+
+<details>
+<summary>
+   
+## 👉 Read the original documentation
+
+</summary>
+
 An implementation of a Normalized Mutual Information (NMI) measure for sets of overlapping clusters.
 
 Fully described in:
@@ -56,3 +65,5 @@ other measures, such as the Omega index [2].},
     url = {http://arxiv.org/abs/1110.2515},
     year = {2011}
 }
+
+</details>
