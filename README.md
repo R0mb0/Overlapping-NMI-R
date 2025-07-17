@@ -72,3 +72,161 @@ other measures, such as the Omega index [2].},
 }
 
 </details>
+
+<details>
+<summary>
+
+## 📝 Exercise solved using the R library
+   
+</summary>
+
+### Where the exercise has been taken 
+
+The exercise is: 38.9.1/2 from this [book](https://www.networkatlas.eu/files/sna_book.pdf)  
+
+### Exercise text 
+
+Use the k-clique algorithm to find overlapping communities in the network at [http://www.networkatlas.eu/exercises/38/1/data.
+txt](http://www.networkatlas.eu/exercises/38/1/data.txt). Test how many nodes are part of no community for k equal to 3, 4, and 5.
+
+Compare the k-clique results with the coverage in [http://www.networkatlas.eu/exercises/38/2/comms.txt](http://www.networkatlas.eu/exercises/38/2/comms.txt), by using any variation of overlapping NMI from [https://github.com/aaronmcdaid/Overlapping-NMI](https://github.com/aaronmcdaid/Overlapping-NMI). For which value of k do you get the best performance?
+
+### Library 
+
+```R
+# Calculating the Overlapping Normalized Mutual Information (NMI) between two covers
+# Robust and compatible with lists of character vectors (each a community)
+
+get_membership_matrix <- function(communities, all_nodes) {
+  mat <- matrix(0, nrow=length(all_nodes), ncol=length(communities))
+  rownames(mat) <- all_nodes
+  for (j in seq_along(communities)) {
+    idx <- match(communities[[j]], all_nodes)
+    idx <- idx[!is.na(idx)]
+    if (length(idx) > 0) {
+      mat[idx, j] <- 1
+    }
+  }
+  mat
+}
+
+NMI <- function(cover1, cover2) {
+  all_nodes <- sort(unique(c(unlist(cover1), unlist(cover2))))
+  X <- get_membership_matrix(cover1, all_nodes)
+  Y <- get_membership_matrix(cover2, all_nodes)
+  n <- length(all_nodes)
+  safe_log2 <- function(x) ifelse(x > 0, log2(x), 0)
+  cond_entropy <- function(A, B) {
+    kA <- ncol(A)
+    kB <- ncol(B)
+    H <- 0
+    for (i in 1:kA) {
+      minH <- Inf
+      for (j in 1:kB) {
+        Nij <- sum(A[,i] & B[,j])
+        if (Nij == 0) next
+        Ni <- sum(A[,i])
+        Nj <- sum(B[,j])
+        pij <- Nij / n
+        pi <- Ni / n
+        pj <- Nj / n
+        Hij <- 0
+        if (pij > 0 && (pi * pj) > 0)
+          Hij <- Hij - (pij) * safe_log2(pij / (pi * pj))
+        if ((Ni-Nij) > 0 && (pi * (1-pj)) > 0)
+          Hij <- Hij - ((Ni-Nij)/n) * safe_log2(((Ni-Nij)/n) / (pi*(1-pj)))
+        if ((Nj-Nij) > 0 && ((1-pi)*pj) > 0)
+          Hij <- Hij - ((Nj-Nij)/n) * safe_log2(((Nj-Nij)/n) / ((1-pi)*pj))
+        if ((n-Ni-Nj+Nij) > 0 && ((1-pi)*(1-pj)) > 0)
+          Hij <- Hij - ((n-Ni-Nj+Nij)/n) * safe_log2(((n-Ni-Nj+Nij)/n) / ((1-pi)*(1-pj)))
+        if (!is.nan(Hij) && Hij < minH)
+          minH <- Hij
+      }
+      if (is.finite(minH)) H <- H + minH
+    }
+    H / kA
+  }
+  H_XY <- cond_entropy(X, Y)
+  H_YX <- cond_entropy(Y, X)
+  NMI_value <- 1 - 0.5 * (H_XY + H_YX)
+  NMI_value
+}
+```
+
+### Exercise solution
+
+```R
+# Compare the k-clique results with the coverage in http://www.
+# networkatlas.eu/exercises/38/2/comms.txt, by using any variation
+# of overlapping NMI from https://github.com/aaronmcdaid/
+# Overlapping-NMI. For which value of k do you get the best performance?
+
+library(here)
+library(igraph)
+
+# Defining the k_clique_communities function for finding k-clique communities
+k_clique_communities <- function(graph, k) {
+  all_cliques <- cliques(graph, min = k, max = k)
+  if (length(all_cliques) == 0) return(list())
+  clique_graph <- make_empty_graph(n = length(all_cliques))
+  for (i in seq_along(all_cliques)) {
+    for (j in seq_len(i-1)) {
+      if (length(intersect(all_cliques[[i]], all_cliques[[j]])) == (k-1)) {
+        clique_graph <- add_edges(clique_graph, c(i, j))
+      }
+    }
+  }
+  comps <- components(clique_graph)
+  communities <- lapply(seq_len(comps$no), function(comp_id) {
+    idx <- which(comps$membership == comp_id)
+    unique(unlist(all_cliques[idx]))
+  })
+  lapply(communities, function(x) V(graph)$name[x])
+}
+
+source(here("OverlappingNMI.R"))
+
+# Loading the edge list and building the graph
+edges <- read.table(here("data.txt"))
+colnames(edges) <- c("from", "to", "weight")
+g <- graph_from_data_frame(edges, directed=FALSE)
+
+# Solution 
+
+# Removing weights for clique percolation
+g_unweighted <- delete_edge_attr(g, "weight")
+
+# Loading the ground truth communities from comms.txt
+comms_lines <- readLines(here("comms.txt"))
+gt_communities <- lapply(comms_lines, function(line) strsplit(line, " ")[[1]])
+gt_communities <- lapply(gt_communities, as.character)
+
+# Defining a function for extracting k-clique communities as lists of character vectors
+get_kc_comms <- function(graph, k) {
+  kc <- k_clique_communities(graph, k)
+  lapply(kc, as.character)
+}
+
+# Initializing a results data frame
+results <- data.frame(k=integer(), nmi=numeric())
+
+# Calculating the NMI for k = 3, 4, 5
+for (k in 3:5) {
+  cat(sprintf("Calculating for k = %d\n", k))
+  detected <- get_kc_comms(g_unweighted, k)
+  nmi_value <- NMI(gt_communities, detected)
+  results <- rbind(results, data.frame(k=k, nmi=nmi_value))
+  cat(sprintf("k = %d | NMI = %.4f\n", k, nmi_value))
+}
+
+cat("\nSummary of k-clique NMI results:\n")
+print(results, row.names = FALSE)
+
+best_k <- results$k[which.max(results$nmi)]
+cat(sprintf("\nBest performance for k = %d (NMI = %.4f)\n", best_k, max(results$nmi)))
+```
+### Referenced repository 
+
+[R0mb0/The_Atlas_for_the_Aspiring_Network_Scientist_exercises_in_R](https://github.com/R0mb0/The_Atlas_for_the_Aspiring_Network_Scientist_exercises_in_R)
+
+</details>
