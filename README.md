@@ -230,3 +230,12 @@ cat(sprintf("\nBest performance for k = %d (NMI = %.4f)\n", best_k, max(results$
 [R0mb0/The_Atlas_for_the_Aspiring_Network_Scientist_exercises_in_R](https://github.com/R0mb0/The_Atlas_for_the_Aspiring_Network_Scientist_exercises_in_R)
 
 </details>
+
+## Library interface 
+
+```R
+# Calculating the Overlapping Normalized Mutual Information (NMI) between two covers
+# Robust and compatible with lists of character vectors (each a community)
+
+NMI <- function(cover1, cover2)
+```
